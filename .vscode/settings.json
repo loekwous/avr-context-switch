@@ -1,0 +1,4 @@
+{
+    "cmake.allowUnsupportedPresetsVersions": true,
+    "cmake.useCMakePresets": "always"
+}
