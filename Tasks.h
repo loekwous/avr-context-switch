@@ -12,7 +12,7 @@ struct TaskControlBlock {
   uint8_t* stackTop = stackBase + TASK_STACK_SIZE - 1u;
   uint8_t* stackPointer = NULL;
   uint8_t statusRegister = 0;
-  TaskState taskstate = READY;
+  TaskState taskstate = BLOCKED;
   TaskFunction function;
   uint16_t leastAvailableStack = TASK_STACK_SIZE;
   uint16_t blockedTime = 0;
@@ -27,6 +27,7 @@ bool CreateTask(TaskFunction function) {
     if (tasks[i].stackPointer == NULL) {
       tasks[i].stackPointer = tasks[i].stackTop;
       tasks[i].function = function;
+      tasks[i].taskstate = READY;
       void* locationOfFunction = (void*)(tasks[i].function);
       *(tasks[i].stackPointer) =
           reinterpret_cast<uint16_t>(locationOfFunction) & 0xFFu;

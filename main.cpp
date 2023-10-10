@@ -5,59 +5,41 @@
 
 #include "Os.h"
 
-void IncrementPortC(void) { PORTC += 1; }
+void IncrementPortC(void) { PORTC ^= (1u << PC0); }
 
-void IncrementPortB(uint32_t value) {
-  PORTB += static_cast<uint8_t>(value & 0xFF);
-}
+void IncrementPortB() { PORTB ^= (1u << PB0); }
 
 void FirstTask() {
   volatile uint32_t value = 1;
   while (true) {
-    asm("NOP");
-    asm("NOP");
-    IncrementPortB(value);
-    // SwitchContext();
-    asm("NOP");
-    asm("NOP");
-    asm("NOP");
+    IncrementPortC();
+    DelayTask(100u);
   }
 }
 
 void SecondTask() {
   while (true) {
-    asm("NOP");
-    asm("NOP");
-    asm("NOP");
-    IncrementPortC();
-    // SwitchContext();
-    asm("NOP");
-    asm("NOP");
-    asm("NOP");
-  }
-}
-
-void ThirdTask() {
-  while (true) {
-    asm("NOP");
-    asm("NOP");
-    asm("NOP");
-    IncrementPortC();
-    // SwitchContext();
-    asm("NOP");
-    asm("NOP");
-    asm("NOP");
+    IncrementPortB();
+    volatile uint32_t x = 0;
+    volatile uint32_t z = 3;
+    volatile uint32_t pb = 4;
+    DelayTask(500u);
   }
 }
 
 int main() {
-  // Timer_Init();
+  DDRB |= (1 << PB0);
+  DDRC |= (1 << PC0);
   PORTB = 0;
   PORTC = 0;
-  sei();
+
+  volatile size_t ramEnd = RAMEND;
+  volatile size_t heapStart = (size_t)__malloc_heap_start;
+  volatile size_t heapEnd = (size_t)__malloc_heap_end;
+  volatile size_t brkval = (size_t)(__malloc_margin);
+
   CreateTask(FirstTask);
   CreateTask(SecondTask);
-  CreateTask(ThirdTask);
   StartScheduler();
 
   // Code should never reach here

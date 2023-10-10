@@ -35,6 +35,19 @@
         "group": "build",
         "problemMatcher": [],
         "detail": "CMake template build task"
+      },
+      {
+        "type": "process",
+        "label": "Flash AVR",
+        "command": "avrdude",
+        "args": [
+          "-pm328p",
+          "-cavrispmkII",
+          "-e",
+          "-Uflash:w:build/Debug/AVR_TEST.elf"
+        ],
+        "problemMatcher": [],
+        "dependsOn": "CMake: build"
       }
     ],
     "inputs": [

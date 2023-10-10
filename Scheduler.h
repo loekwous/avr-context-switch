@@ -7,6 +7,10 @@
 #include "Port.h"
 #include "Tasks.h"
 
+#if USE_WATERMARK_HOOK == 1
+extern void WaterMarkHook();
+#endif
+
 #define UPDATE_MIN_TASK_FREE(tcb) \
   tcb.leastAvailableStack = (tcb.stackPointer - tcb.stackBase);
 
@@ -20,14 +24,31 @@
 uint8_t SystemBuffer[TOTAL_HEAP_SIZE];
 TaskControlBlock* delayedTasks[MAX_NUMBER_OF_TASKS];
 
-static uint32_t tickTimer = 0;
+static bool tickIsUpdated = false;
 
 volatile void* defaultStack = nullptr;
 
 __attribute__((naked)) void SwitchContext(void);
 __attribute__((naked)) void SwitchContextFromVoid(void);
-__attribute__((naked)) void StartScheduler(void);
-__attribute__((naked)) void DelayTask(uint16_t delayTicks);
+void StartScheduler(void);
+void DelayTask(uint16_t delayTicks);
+void AddTaskToDelayList(TaskControlBlock* task);
+
+void UpdateTimeTasks() {
+  if (tickIsUpdated) {
+    tickIsUpdated = false;
+    for (uint8_t i = 0; i < MAX_NUMBER_OF_TASKS; i++) {
+      if (delayedTasks[i] != nullptr) {
+        if (delayedTasks[i]->blockedTime > 0) {
+          delayedTasks[i]->blockedTime--;
+        } else {
+          delayedTasks[i]->taskstate = READY;
+          delayedTasks[i] = nullptr;
+        }
+      }
+    }
+  }
+}
 
 __attribute__((naked)) void SwitchContextFromVoid(void) {
   currentTask->taskstate = RUNNING;
@@ -54,8 +75,18 @@ __attribute__((naked)) void SwitchContext(void) {
           ? currentFree
           : currentTask->leastAvailableStack;
 
+#if USE_WATERMARK_HOOK == 1
+  if (currentTask->leastAvailableStack <= WATERMARK_THRESHOLD) {
+    WaterMarkHook();
+  }
+#endif
+
+  UpdateTimeTasks();
+
   // Place old task state to READY
-  currentTask->taskstate = READY;
+  if (currentTask->taskstate == RUNNING) {
+    currentTask->taskstate = READY;
+  }
 
   // Find next free task
   do {
@@ -79,9 +110,20 @@ __attribute__((naked)) void SwitchContext(void) {
   asm volatile("reti");
 }
 
+void AddTaskToDelayList(TaskControlBlock* task) {
+  for (uint8_t i = 0; i < MAX_NUMBER_OF_TASKS; i++) {
+    if (delayedTasks[i] == nullptr) {
+      delayedTasks[i] = task;
+      break;
+    }
+  }
+}
+
 void DelayTask(uint16_t delayTicks) {
   currentTask->blockedTime = delayTicks;
   currentTask->taskstate = BLOCKED;
+  AddTaskToDelayList(currentTask);
+  SwitchContext();
 }
 
 void DelayInit() {
@@ -91,14 +133,21 @@ void DelayInit() {
 }
 
 void Timer_Init(void) {
-  constexpr uint8_t CLK_DIV_1024 = 5u;
+  constexpr uint8_t CLK_DIV_64 = 3u;
   TCNT1 = 0;
-  OCR1A = TICK_REQ_100_KHZ;
+  OCR1A = TICK_FREQ_KHZ;
   TIMSK1 = (1u << OCIE1A);
-  TCCR1B = CLK_DIV_1024 | (1u << WGM12);
+  TCCR1B = CLK_DIV_64 | (1u << WGM12);
 }
 
-__attribute__((naked)) void StartScheduler(void) {
+void IdleTask() {
+  while (true) {
+    asm volatile("NOP");
+  }
+}
+
+void StartScheduler(void) {
+  CreateTask(IdleTask);
   sei();
   DelayInit();
   Timer_Init();
@@ -110,8 +159,9 @@ __attribute__((naked)) void StartScheduler(void) {
 }
 
 ISR(TIMER1_COMPA_vect, ISR_NAKED) {
-  tickTimer++;
+  tickIsUpdated = true;
   SwitchContext();
+  asm volatile("reti");
 }
 
 #endif  // __SCHEDULER_H__
