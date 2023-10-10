@@ -1,9 +1,9 @@
 
 #include <avr/io.h>
-#include <etl/array.h>
 #include <stdint.h>
 
-#include "Os.h"
+#include "Scheduler.h"
+#include "Tasks.h"
 
 void IncrementPortC(void) { PORTC ^= (1u << PC0); }
 
@@ -13,7 +13,7 @@ void FirstTask() {
   volatile uint32_t value = 1;
   while (true) {
     IncrementPortC();
-    DelayTask(100u);
+    OS::DelayTask(100u);
   }
 }
 
@@ -23,7 +23,7 @@ void SecondTask() {
     volatile uint32_t x = 0;
     volatile uint32_t z = 3;
     volatile uint32_t pb = 4;
-    DelayTask(500u);
+    OS::DelayTask(500u);
   }
 }
 
@@ -33,14 +33,9 @@ int main() {
   PORTB = 0;
   PORTC = 0;
 
-  volatile size_t ramEnd = RAMEND;
-  volatile size_t heapStart = (size_t)__malloc_heap_start;
-  volatile size_t heapEnd = (size_t)__malloc_heap_end;
-  volatile size_t brkval = (size_t)(__malloc_margin);
-
-  CreateTask(FirstTask);
-  CreateTask(SecondTask);
-  StartScheduler();
+  OS::CreateTask(FirstTask);
+  OS::CreateTask(SecondTask);
+  OS::StartScheduler();
 
   // Code should never reach here
   while (true) {

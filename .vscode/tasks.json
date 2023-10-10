@@ -48,6 +48,14 @@
         ],
         "problemMatcher": [],
         "dependsOn": "CMake: build"
+      },
+      {
+        "type": "cmake",
+        "label": "CMake: install",
+        "command": "install",
+        "preset": "${command:cmake.activeBuildPresetName}",
+        "problemMatcher": [],
+        "detail": "CMake template install task"
       }
     ],
     "inputs": [

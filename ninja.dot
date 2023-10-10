@@ -1,0 +1,57 @@
+digraph ninja {
+rankdir="LR"
+node [fontsize=10, shape=box, height=0.25]
+edge [fontsize=10]
+"0x555d8c0f0ce0" [label="AVR_TEST"]
+"0x555d8c0ebb40" -> "0x555d8c0f0ce0" [label=" phony"]
+"0x555d8c0ebb40" [label="AVR_TEST.elf"]
+"0x555d8c0ebad0" [label="CXX_EXECUTABLE_LINKER__AVR_TEST_Debug", shape=ellipse]
+"0x555d8c0ebad0" -> "0x555d8c0ebb40"
+"0x555d8c0eab40" -> "0x555d8c0ebad0" [arrowhead=none]
+"0x555d8c0eb2e0" -> "0x555d8c0ebad0" [arrowhead=none]
+"0x555d8c0ebc40" -> "0x555d8c0ebad0" [arrowhead=none]
+"0x555d8c0ebd00" -> "0x555d8c0ebad0" [arrowhead=none style=dotted]
+"0x555d8c0ebc40" -> "0x555d8c0ebad0" [arrowhead=none style=dotted]
+"0x555d8c0eab40" [label="CMakeFiles/AVR_TEST.dir/main.cpp.obj"]
+"0x555d8c0eaad0" [label="CXX_COMPILER__AVR_TEST_Debug", shape=ellipse]
+"0x555d8c0eaad0" -> "0x555d8c0eab40"
+"0x555d8c0eabe0" -> "0x555d8c0eaad0" [arrowhead=none]
+"0x555d8c0e6600" -> "0x555d8c0eaad0" [arrowhead=none style=dotted]
+"0x555d8c0eabe0" [label="/home/loek/Projects/avr-context-switch/main.cpp"]
+"0x555d8c0e6600" [label="cmake_object_order_depends_target_AVR_TEST"]
+"0x555d8c0e6530" [label="phony", shape=ellipse]
+"0x555d8c0e6530" -> "0x555d8c0e6600"
+"0x555d8c0e6740" -> "0x555d8c0e6530" [arrowhead=none style=dotted]
+"0x555d8c0e6840" -> "0x555d8c0e6530" [arrowhead=none style=dotted]
+"0x555d8c0e6740" [label="cmake_object_order_depends_target_OsHeap"]
+"0x555d8c0eeb30" -> "0x555d8c0e6740" [label=" phony"]
+"0x555d8c0eeb30" [label="Os/CMakeFiles/OsHeap.dir"]
+"0x555d8c0e6840" [label="cmake_object_order_depends_target_OsScheduler"]
+"0x555d8c0e6740" -> "0x555d8c0e6840" [label=" phony"]
+"0x555d8c0eb2e0" [label="CMakeFiles/AVR_TEST.dir/startup.s.obj"]
+"0x555d8c0eb240" [label="ASM_COMPILER__AVR_TEST_Debug", shape=ellipse]
+"0x555d8c0eb240" -> "0x555d8c0eb2e0"
+"0x555d8c0eb380" -> "0x555d8c0eb240" [arrowhead=none]
+"0x555d8c0e6600" -> "0x555d8c0eb240" [arrowhead=none style=dotted]
+"0x555d8c0eb380" [label="/home/loek/Projects/avr-context-switch/startup.s"]
+"0x555d8c0ebc40" [label="Os/libOsScheduler.a"]
+"0x555d8c0f0180" [label="CXX_STATIC_LIBRARY_LINKER__OsScheduler_Debug", shape=ellipse]
+"0x555d8c0f0180" -> "0x555d8c0ebc40"
+"0x555d8c0ef210" -> "0x555d8c0f0180" [arrowhead=none]
+"0x555d8c0efa90" -> "0x555d8c0f0180" [arrowhead=none]
+"0x555d8c0ebd00" -> "0x555d8c0f0180" [arrowhead=none style=dotted]
+"0x555d8c0ef210" [label="Os/CMakeFiles/OsHeap.dir/OsHeap.cpp.obj"]
+"0x555d8c0ef1a0" [label="CXX_COMPILER__OsHeap_Debug", shape=ellipse]
+"0x555d8c0ef1a0" -> "0x555d8c0ef210"
+"0x555d8c0ef2a0" -> "0x555d8c0ef1a0" [arrowhead=none]
+"0x555d8c0e6740" -> "0x555d8c0ef1a0" [arrowhead=none style=dotted]
+"0x555d8c0ef2a0" [label="/home/loek/Projects/avr-context-switch/Os/OsHeap.cpp"]
+"0x555d8c0efa90" [label="Os/CMakeFiles/OsScheduler.dir/Scheduler.cpp.obj"]
+"0x555d8c0efa20" [label="CXX_COMPILER__OsScheduler_Debug", shape=ellipse]
+"0x555d8c0efa20" -> "0x555d8c0efa90"
+"0x555d8c0efb40" -> "0x555d8c0efa20" [arrowhead=none]
+"0x555d8c0e6840" -> "0x555d8c0efa20" [arrowhead=none style=dotted]
+"0x555d8c0efb40" [label="/home/loek/Projects/avr-context-switch/Os/Scheduler.cpp"]
+"0x555d8c0ebd00" [label="Os/OsHeap"]
+"0x555d8c0ef210" -> "0x555d8c0ebd00" [label=" phony"]
+}

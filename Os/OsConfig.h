@@ -1,7 +1,7 @@
 #ifndef __OSCONFIG_H__
 #define __OSCONFIG_H__
 
-#define TOTAL_HEAP_SIZE (512u)
+#define TOTAL_HEAP_SIZE (1024u)
 #define TASK_STACK_SIZE (128u)
 #define MAX_NUMBER_OF_TASKS (4u)
 

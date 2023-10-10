@@ -1,5 +1,5 @@
-#ifndef __PORT_H__
-#define __PORT_H__
+#ifndef __CONTEXT_SWITCH_MACROS_H__
+#define __CONTEXT_SWITCH_MACROS_H__
 
 #define SAVE_CONTEXT                        \
   asm volatile(                             \
@@ -78,4 +78,4 @@
       "out  __SREG__, r0              \n\t" \
       "pop  r0                        \n\t")
 
-#endif  // __PORT_H__
+#endif  // __CONTEXT_SWITCH_MACROS_H__

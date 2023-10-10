@@ -1,15 +1,9 @@
-#ifndef __SCHEDULER_H__
-#define __SCHEDULER_H__
+#include "Scheduler.h"
 
-#include <avr/interrupt.h>
-#include <avr/io.h>
-
-#include "Port.h"
+#include "ContextSwitchMacros.h"
+#include "OsConfig.h"
+#include "OsHeap.h"
 #include "Tasks.h"
-
-#if USE_WATERMARK_HOOK == 1
-extern void WaterMarkHook();
-#endif
 
 #define UPDATE_MIN_TASK_FREE(tcb) \
   tcb.leastAvailableStack = (tcb.stackPointer - tcb.stackBase);
@@ -21,20 +15,20 @@ extern void WaterMarkHook();
 
 #define ASSIGN_SP_OF(TCB) SP = (uint16_t)(TCB->stackPointer)
 
-uint8_t SystemBuffer[TOTAL_HEAP_SIZE];
+namespace {
+
+#if USE_WATERMARK_HOOK == 1
+extern void WaterMarkHook();
+#endif
+
+TaskControlBlock tasks[MAX_NUMBER_OF_TASKS];
+TaskControlBlock* currentTask = tasks;
 TaskControlBlock* delayedTasks[MAX_NUMBER_OF_TASKS];
 
-static bool tickIsUpdated = false;
-
+bool tickIsUpdated = false;
 volatile void* defaultStack = nullptr;
 
-__attribute__((naked)) void SwitchContext(void);
-__attribute__((naked)) void SwitchContextFromVoid(void);
-void StartScheduler(void);
-void DelayTask(uint16_t delayTicks);
-void AddTaskToDelayList(TaskControlBlock* task);
-
-void UpdateTimeTasks() {
+static void UpdateTimeTasks() {
   if (tickIsUpdated) {
     tickIsUpdated = false;
     for (uint8_t i = 0; i < MAX_NUMBER_OF_TASKS; i++) {
@@ -50,7 +44,38 @@ void UpdateTimeTasks() {
   }
 }
 
-__attribute__((naked)) void SwitchContextFromVoid(void) {
+void AddTaskToDelayList(TaskControlBlock* task) {
+  for (uint8_t i = 0; i < MAX_NUMBER_OF_TASKS; i++) {
+    if (delayedTasks[i] == nullptr) {
+      delayedTasks[i] = task;
+      break;
+    }
+  }
+}
+
+void DelayInit() {
+  for (uint8_t i = 0; i < MAX_NUMBER_OF_TASKS; i++) {
+    delayedTasks[i] = nullptr;
+  }
+}
+
+void Timer_Init(void) {
+  constexpr uint8_t CLK_DIV_64 = 3u;
+  TCNT1 = 0;
+  OCR1A = TICK_FREQ_KHZ;
+  TIMSK1 = (1u << OCIE1A);
+  TCCR1B = CLK_DIV_64 | (1u << WGM12);
+}
+
+void IdleTask() {
+  while (true) {
+    asm volatile("NOP");
+  }
+}
+
+}  // namespace
+
+OS_NAKED void OS::SwitchContextFromVoid(void) {
   currentTask->taskstate = RUNNING;
   SAVE_CONTEXT;               // Save original context
   defaultStack = (void*)SP;   // save stack pointer for context switch
@@ -59,7 +84,7 @@ __attribute__((naked)) void SwitchContextFromVoid(void) {
   asm volatile("ret");        // Go to first task
 }
 
-__attribute__((naked)) void SwitchContext(void) {
+OS_NAKED void OS::SwitchContext(void) {
   SAVE_CONTEXT;  // Save task context
 
   currentTask->stackPointer =
@@ -110,43 +135,43 @@ __attribute__((naked)) void SwitchContext(void) {
   asm volatile("reti");
 }
 
-void AddTaskToDelayList(TaskControlBlock* task) {
+bool OS::CreateTask(TaskFunction function) {
+  bool assigned = false;
   for (uint8_t i = 0; i < MAX_NUMBER_OF_TASKS; i++) {
-    if (delayedTasks[i] == nullptr) {
-      delayedTasks[i] = task;
+    if (tasks[i].stackPointer == NULL) {
+      tasks[i].stackPointer = tasks[i].stackTop;
+      tasks[i].function = function;
+      tasks[i].taskstate = READY;
+      void* locationOfFunction = (void*)(tasks[i].function);
+      *(tasks[i].stackPointer) =
+          reinterpret_cast<uint16_t>(locationOfFunction) & 0xFFu;
+      (tasks[i].stackPointer)--;
+      *(tasks[i].stackPointer) =
+          (reinterpret_cast<uint16_t>(locationOfFunction) & 0xFF00u) >> 8u;
+      (tasks[i].stackPointer) -= 2u;
+      *(tasks[i].stackPointer) = 0x80u;
+      (tasks[i].stackPointer) -= 32;
+      assigned = true;
       break;
     }
   }
+  return assigned;
 }
 
-void DelayTask(uint16_t delayTicks) {
+void OS::DelayTask(uint16_t delayTicks) {
   currentTask->blockedTime = delayTicks;
   currentTask->taskstate = BLOCKED;
   AddTaskToDelayList(currentTask);
   SwitchContext();
 }
 
-void DelayInit() {
-  for (uint8_t i = 0; i < MAX_NUMBER_OF_TASKS; i++) {
-    delayedTasks[i] = nullptr;
-  }
+ISR(TIMER1_COMPA_vect, ISR_NAKED) {
+  tickIsUpdated = true;
+  OS::SwitchContext();
+  asm volatile("reti");
 }
 
-void Timer_Init(void) {
-  constexpr uint8_t CLK_DIV_64 = 3u;
-  TCNT1 = 0;
-  OCR1A = TICK_FREQ_KHZ;
-  TIMSK1 = (1u << OCIE1A);
-  TCCR1B = CLK_DIV_64 | (1u << WGM12);
-}
-
-void IdleTask() {
-  while (true) {
-    asm volatile("NOP");
-  }
-}
-
-void StartScheduler(void) {
+void OS::StartScheduler(void) {
   CreateTask(IdleTask);
   sei();
   DelayInit();
@@ -157,11 +182,3 @@ void StartScheduler(void) {
     asm volatile("NOP");
   }
 }
-
-ISR(TIMER1_COMPA_vect, ISR_NAKED) {
-  tickIsUpdated = true;
-  SwitchContext();
-  asm volatile("reti");
-}
-
-#endif  // __SCHEDULER_H__
